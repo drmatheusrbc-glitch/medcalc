@@ -1,0 +1,5 @@
+{
+  "name": "MedCalc Pro",
+  "description": "Calculadora de infusão contínua de drogas vasoativas e sedativos para uso médico, baseada em protocolos de terapia intensiva.",
+  "requestFramePermissions": []
+}
