@@ -1,6 +1,7 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { DRUGS } from '../data/drugs';
-import { DrugCategory, Drug, DoseUnit } from '../types';
+import { DrugCategory, DoseUnit } from '../types';
 
 export const Calculator: React.FC = () => {
   // -- STATE --
@@ -14,25 +15,32 @@ export const Calculator: React.FC = () => {
   // -- DERIVED VALUES --
   const availableDrugs = useMemo(() => DRUGS.filter(d => d.category === selectedCategory), [selectedCategory]);
   
-  // Ensure we have a valid drug selected when category changes
+  // Sync selectedDrugId when Category changes
   useEffect(() => {
-    const firstDrug = availableDrugs[0];
-    if (firstDrug && !availableDrugs.find(d => d.id === selectedDrugId)) {
-        setSelectedDrugId(firstDrug.id);
+    const currentDrug = DRUGS.find(d => d.id === selectedDrugId);
+    // If current drug is not in the new category, switch to the first one of the new category
+    if (!currentDrug || currentDrug.category !== selectedCategory) {
+      if (availableDrugs.length > 0) {
+        setSelectedDrugId(availableDrugs[0].id);
+      }
     }
-  }, [availableDrugs, selectedDrugId]);
+  }, [selectedCategory, availableDrugs, selectedDrugId]);
 
-  const selectedDrug = useMemo(() => DRUGS.find(d => d.id === selectedDrugId) || availableDrugs[0], [selectedDrugId, availableDrugs]);
+  // Get the actual Drug object
+  const selectedDrug = useMemo(() => 
+    DRUGS.find(d => d.id === selectedDrugId) || availableDrugs[0], 
+    [selectedDrugId, availableDrugs]
+  );
   
   const isBolus = selectedDrug?.isBolus || false;
 
-  // Update selected dilution when drug changes
+  // Sync Dilution when Drug changes
   useEffect(() => {
     if (selectedDrug) {
       const validDilution = selectedDrug.dilutions.find(d => d.id === selectedDilutionId);
-      if (!validDilution) {
+      if (!validDilution && selectedDrug.dilutions.length > 0) {
         setSelectedDilutionId(selectedDrug.dilutions[0].id);
-        setInputValue(''); // Clear input on drug change for safety
+        setInputValue(''); // Reset input for safety
       }
     }
   }, [selectedDrug, selectedDilutionId]);
@@ -46,46 +54,45 @@ export const Calculator: React.FC = () => {
   const result = useMemo(() => {
     if (!selectedDrug || !selectedDilution || !inputValue) return null;
     
+    // Replace comma with dot for PT-BR inputs
     const val = parseFloat(inputValue.replace(',', '.'));
-    const ptWeight = parseFloat(weight);
+    const ptWeight = parseFloat(weight.replace(',', '.'));
 
     if (isNaN(val)) return null;
     if (selectedDrug.isWeightBased && (isNaN(ptWeight) || ptWeight <= 0)) return null;
 
-    // Constants for conversion
-    const concVal = selectedDilution.concentration; // e.g. 64
-    const concUnit = selectedDilution.concentrationUnit; // e.g. 'mcg/mL'
+    // Constants
+    const concVal = selectedDilution.concentration;
+    const concUnit = selectedDilution.concentrationUnit; 
     const doseUnit = selectedDrug.defaultDoseUnit;
 
-    // Special handling for ml/kg unit (Volume based dosing)
+    // Check for Volume-Based Dosing (ml/kg)
     const isVolumeDose = doseUnit === DoseUnit.ML_KG;
 
-    // Normalize Concentration to Base Amount / mL if not Volume Dose
+    // Normalize Concentration to match Dose Unit numerator
+    // e.g. if Dose is mcg/..., and Conc is mg/..., we need Conc in mcg/...
     let normalizedConc = concVal;
     
     if (!isVolumeDose) {
         const doseNumerator = doseUnit.split('/')[0]; // 'mcg', 'mg', 'U'
-        const concNumerator = concUnit.split('/')[0]; // 'mcg', 'mg', 'U'
+        const concNumerator = concUnit.split('/')[0]; // 'mcg', 'mg', 'U', 'ml'
 
         if (doseNumerator === 'mcg' && concNumerator === 'mg') {
-            normalizedConc = concVal * 1000; // 1 mg/mL = 1000 mcg/mL
+            normalizedConc = concVal * 1000;
         } else if (doseNumerator === 'mg' && concNumerator === 'mcg') {
-            normalizedConc = concVal / 1000; // 1000 mcg/mL = 1 mg/mL
+            normalizedConc = concVal / 1000;
         }
-        // If units are same (U and U, mg and mg), normalizedConc = concVal
+        // If units match or are incompatible (like ml/ml), keep as is
     }
 
     if (mode === 'dose_to_rate') {
-      // Input is Dose. Output is Rate (mL/h) OR Volume (mL) for Bolus.
+      // INPUT: Dose
+      // OUTPUT: Rate (mL/h) or Volume (mL)
       
-      let totalDose = 0;
-
-      // 1. Calculate Total Dose (per hour if continuous, or absolute if bolus)
       if (isBolus) {
-         // Bolus Logic
+         // --- BOLUS MODE ---
          if (isVolumeDose) {
-             // Unit is mL/kg. Total Dose (mL) = Dose(ml/kg) * Weight
-             // Concentration is irrelevant for calculation, return total Volume directly
+             // Input is ml/kg. Output is Total mL.
              const volume = val * ptWeight;
              return {
                  value: volume,
@@ -93,41 +100,49 @@ export const Calculator: React.FC = () => {
                  label: 'Volume da Dose'
              };
          } else {
-             // Mass based Bolus (mg/kg, mcg/kg)
-             totalDose = val;
+             // Input is Mass/kg (mg/kg, mcg/kg). Output is mL.
+             let totalMass = val; // dose
+             if (selectedDrug.isWeightBased) {
+                 totalMass = totalMass * ptWeight;
+             }
+             const volume = totalMass / normalizedConc;
+             return {
+                 value: volume,
+                 unit: 'mL',
+                 label: 'Volume da Dose'
+             };
          }
       } else {
-         // Continuous Infusion Logic
+         // --- CONTINUOUS MODE ---
+         let totalDosePerHour = val;
+         
+         // Convert /min to /hour if necessary
          if (doseUnit.includes('/min')) {
-            totalDose = val * 60; // min -> hour
-         } else {
-            totalDose = val;
+            totalDosePerHour = val * 60;
          }
-      }
 
-      // 2. Handle Weight (applies to both Bolus and Continuous)
-      if (selectedDrug.isWeightBased) {
-        totalDose = totalDose * ptWeight;
-      }
+         // Apply Weight
+         if (selectedDrug.isWeightBased) {
+            totalDosePerHour = totalDosePerHour * ptWeight;
+         }
 
-      // 3. Calculate Output (Volume or Rate)
-      // For Bolus: Volume = TotalDose / Concentration
-      // For Continuous: Rate = TotalDosePerHour / Concentration
-      const resultValue = totalDose / normalizedConc;
-      
-      return {
-        value: resultValue,
-        unit: isBolus ? 'mL' : 'mL/h',
-        label: isBolus ? 'Volume a Administrar' : 'Vazão da Bomba'
-      };
+         // Rate = DosePerHour / Concentration
+         const rate = totalDosePerHour / normalizedConc;
+         return {
+            value: rate,
+            unit: 'mL/h',
+            label: 'Vazão da Bomba'
+         };
+      }
 
     } else {
-      // Input is Rate (mL/h) OR Volume (mL). Output is Dose.
+      // INPUT: Rate (mL/h) or Volume (mL)
+      // OUTPUT: Dose
       
-      const inputVol = val; // mL or mL/h
+      const inputVol = val; 
       
       if (isVolumeDose) {
-          // Reverse Volume Dose: Dose (ml/kg) = Volume (ml) / Weight
+          // Reverse: Dose (ml/kg) = Volume (ml) / Weight
           const dose = inputVol / ptWeight;
           return {
               value: dose,
@@ -136,17 +151,17 @@ export const Calculator: React.FC = () => {
           };
       }
 
-      // Calculate Total Amount (Mass/Units) given
-      const totalAmount = inputVol * normalizedConc; // [Mass] or [Mass]/h
+      // Calculate Mass administered
+      const totalMass = inputVol * normalizedConc; 
 
-      let finalDose = totalAmount;
+      let finalDose = totalMass;
 
-      // 1. Handle Weight
+      // Remove Weight factor
       if (selectedDrug.isWeightBased) {
         finalDose = finalDose / ptWeight;
       }
 
-      // 2. Handle Time Unit (convert per hour to per min if needed)
+      // Convert Time factor (hour -> min)
       if (!isBolus && doseUnit.includes('/min')) {
         finalDose = finalDose / 60;
       }
@@ -162,21 +177,22 @@ export const Calculator: React.FC = () => {
   // -- HANDLERS --
   const handleCategoryChange = (cat: DrugCategory) => {
     setSelectedCategory(cat);
-    // Reset selection logic handled by useEffect
   };
 
-  // UI Helper strings
+  // -- UI HELPERS --
   const getInputLabel = () => {
     if (mode === 'dose_to_rate') {
-      return `Dose Prescrita (${selectedDrug?.defaultDoseUnit})`;
+      return `Dose Prescrita (${selectedDrug?.defaultDoseUnit || '...' })`;
     }
-    return isBolus ? 'Volume (mL)' : 'Vazão (mL/h)';
+    return isBolus ? 'Volume Infundido (mL)' : 'Vazão da Bomba (mL/h)';
   };
 
   const getModeLabel = (m: 'dose_to_rate' | 'rate_to_dose') => {
     if (m === 'dose_to_rate') return isBolus ? 'Calcular Volume' : 'Calcular Vazão';
     return 'Calcular Dose';
   };
+
+  if (!selectedDrug) return <div className="p-6 text-center text-slate-500">Carregando dados...</div>;
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -274,7 +290,7 @@ export const Calculator: React.FC = () => {
             <div className="md:col-span-3">
               <label className="block text-sm font-semibold text-slate-700 mb-2">Peso (kg)</label>
               <input
-                type="number"
+                type="text"
                 inputMode="decimal"
                 value={weight}
                 onChange={(e) => setWeight(e.target.value)}
@@ -311,7 +327,7 @@ export const Calculator: React.FC = () => {
             </div>
             
             <input
-              type="number"
+              type="text"
               inputMode="decimal"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
