@@ -172,7 +172,6 @@ export const DRUGS: Drug[] = [
         concentrationUnit: 'mcg/mL'
       }
     ],
-    // Changed to weight based per instruction "0,3 até 10 μg/kg/min"
     defaultDoseUnit: DoseUnit.MCG_KG_MIN,
     isWeightBased: true,
     doseRangeDisplay: '0,3 - 10 mcg/kg/min',
@@ -198,9 +197,9 @@ export const DRUGS: Drug[] = [
         concentrationUnit: 'mg/mL'
       }
     ],
-    defaultDoseUnit: DoseUnit.MG_KG_H,
+    defaultDoseUnit: DoseUnit.MCG_KG_H, // Updated to mcg/kg/h
     isWeightBased: true,
-    doseRangeDisplay: '0,05 - 0,4 mg/kg/h'
+    doseRangeDisplay: '0,05 - 0,4 mcg/kg/h'
   },
   {
     id: 'propofol',
@@ -276,7 +275,6 @@ export const DRUGS: Drug[] = [
         concentrationUnit: 'mcg/mL'
       }
     ],
-    // Updated unit to mcg/kg/min per instruction
     defaultDoseUnit: DoseUnit.MCG_KG_MIN,
     isWeightBased: true,
     doseRangeDisplay: '0,02 - 0,07 mcg/kg/min'
