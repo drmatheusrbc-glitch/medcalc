@@ -197,9 +197,9 @@ export const DRUGS: Drug[] = [
         concentrationUnit: 'mg/mL'
       }
     ],
-    defaultDoseUnit: DoseUnit.MCG_KG_H, // Updated to mcg/kg/h
+    defaultDoseUnit: DoseUnit.MG_KG_H, // Corrected back to mg/kg/h
     isWeightBased: true,
-    doseRangeDisplay: '0,05 - 0,4 mcg/kg/h'
+    doseRangeDisplay: '0,05 - 0,4 mg/kg/h'
   },
   {
     id: 'propofol',
