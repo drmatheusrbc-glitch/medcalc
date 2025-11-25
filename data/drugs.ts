@@ -23,7 +23,8 @@ export const DRUGS: Drug[] = [
     ],
     defaultDoseUnit: DoseUnit.MCG_KG_MIN,
     isWeightBased: true,
-    doseRangeDisplay: '0,01 - 2 mcg/kg/min'
+    doseRangeDisplay: '0,05 - 2 mcg/kg/min',
+    notes: 'Sugere-se a adição de vasopressina quando a dose de noradrenalina estiver na faixa de 0,25-0,5 μg/kg/min, para reduzir a carga adrenérgica.'
   },
   {
     id: 'dopamina',
@@ -39,7 +40,8 @@ export const DRUGS: Drug[] = [
     ],
     defaultDoseUnit: DoseUnit.MCG_KG_MIN,
     isWeightBased: true,
-    doseRangeDisplay: '5 - 20 mcg/kg/min'
+    doseRangeDisplay: '5 - 20 mcg/kg/min',
+    notes: 'Efeito dopa: < 5mcg/kg/min | Efeito beta: 5-10mcg/kg/min | Efeito alfa: > 10mcg/kg/min'
   },
   {
     id: 'adrenalina',
@@ -53,9 +55,10 @@ export const DRUGS: Drug[] = [
         concentrationUnit: 'mcg/mL'
       }
     ],
-    defaultDoseUnit: DoseUnit.MCG_KG_MIN,
-    isWeightBased: true,
-    doseRangeDisplay: '0,1 - 1 mcg/kg/min (Choque)'
+    // Updated to non-weight based per instruction "1-20 mcg/min"
+    defaultDoseUnit: DoseUnit.MCG_MIN,
+    isWeightBased: false,
+    doseRangeDisplay: '1-20 mcg/min (Choque) | 0,05-0,1 mg/min (Anafilaxia)'
   },
   {
     id: 'vasopressina',
@@ -101,7 +104,8 @@ export const DRUGS: Drug[] = [
     ],
     defaultDoseUnit: DoseUnit.MCG_KG_MIN,
     isWeightBased: true,
-    doseRangeDisplay: '2 - 20 mcg/kg/min'
+    doseRangeDisplay: '2 - 20 mcg/kg/min',
+    notes: 'Agonista β1 e β2. Doses acima de 20 μg/kg/min geralmente oferecem pouco benefício adicional.'
   },
   {
     id: 'milrinone',
@@ -117,7 +121,8 @@ export const DRUGS: Drug[] = [
     ],
     defaultDoseUnit: DoseUnit.MCG_KG_MIN,
     isWeightBased: true,
-    doseRangeDisplay: '0,125 - 0,75 mcg/kg/min'
+    doseRangeDisplay: '0,375 - 0,75 mcg/kg/min',
+    notes: 'Inibidor da fosfodiesterase. Associado a mais hipotensão e arritmias. Evitar em miocardiopatia isquêmica.'
   },
   {
     id: 'levosimendana',
@@ -133,7 +138,8 @@ export const DRUGS: Drug[] = [
     ],
     defaultDoseUnit: DoseUnit.MCG_KG_MIN,
     isWeightBased: true,
-    doseRangeDisplay: '0,05 - 0,2 mcg/kg/min (Manutenção)'
+    doseRangeDisplay: '0,05 - 0,2 mcg/kg/min (24h)',
+    notes: 'Sensibiliza troponina C ao cálcio. Aumenta contratilidade com baixo gasto de energia e causa vasodilatação.'
   },
 
   // --- VASODILATADORES ---
@@ -151,7 +157,8 @@ export const DRUGS: Drug[] = [
     ],
     defaultDoseUnit: DoseUnit.MCG_MIN,
     isWeightBased: false,
-    doseRangeDisplay: '5 - 400 mcg/min'
+    doseRangeDisplay: '5 - 100 mcg/min',
+    notes: 'Titular até alívio dos sintomas/PA alvo. Contraindicada em infarto de VD ou uso recente de inibidores da fosfodiesterase-5.'
   },
   {
     id: 'nitroprussiato',
@@ -165,9 +172,11 @@ export const DRUGS: Drug[] = [
         concentrationUnit: 'mcg/mL'
       }
     ],
-    defaultDoseUnit: DoseUnit.MCG_MIN,
-    isWeightBased: false,
-    doseRangeDisplay: '5 - 400 mcg/min'
+    // Changed to weight based per instruction "0,3 até 10 μg/kg/min"
+    defaultDoseUnit: DoseUnit.MCG_KG_MIN,
+    isWeightBased: true,
+    doseRangeDisplay: '0,3 - 10 mcg/kg/min',
+    notes: 'Evitar em isquemia miocárdica ("roubo de fluxo coronário"). Risco de intoxicação por cianeto.'
   },
 
   // --- SEDAÇÃO E ANALGESIA CONTÍNUA ---
@@ -191,7 +200,7 @@ export const DRUGS: Drug[] = [
     ],
     defaultDoseUnit: DoseUnit.MG_KG_H,
     isWeightBased: true,
-    doseRangeDisplay: '0,01 - 0,1 mg/kg/h'
+    doseRangeDisplay: '0,05 - 0,4 mg/kg/h'
   },
   {
     id: 'propofol',
@@ -213,8 +222,8 @@ export const DRUGS: Drug[] = [
     ],
     defaultDoseUnit: DoseUnit.MCG_KG_MIN,
     isWeightBased: true,
-    doseRangeDisplay: '5 - 50 mcg/kg/min',
-    notes: 'Atenção à concentração do frasco. O PDF refere-se a 2% (20mg/mL) na tabela principal.'
+    doseRangeDisplay: '10 - 200 mcg/kg/min',
+    notes: 'Atenção à concentração do frasco. O PDF original refere-se a 2% (20mg/mL) na tabela principal.'
   },
   {
     id: 'quetamina',
@@ -236,7 +245,7 @@ export const DRUGS: Drug[] = [
     ],
     defaultDoseUnit: DoseUnit.MG_KG_H,
     isWeightBased: true,
-    doseRangeDisplay: '0,2 - 0,5 mg/kg/h'
+    doseRangeDisplay: '0,5 - 1,2 mg/kg/h'
   },
   {
     id: 'dexmedetomidina',
@@ -252,7 +261,8 @@ export const DRUGS: Drug[] = [
     ],
     defaultDoseUnit: DoseUnit.MCG_KG_H,
     isWeightBased: true,
-    doseRangeDisplay: '0,2 - 1,5 mcg/kg/h'
+    doseRangeDisplay: '0,2 - 1,4 mcg/kg/h',
+    notes: 'O bolus não deve ser realizado. Ataque recomendado: 1 μg/kg em 10 minutos.'
   },
   {
     id: 'fentanil',
@@ -266,9 +276,10 @@ export const DRUGS: Drug[] = [
         concentrationUnit: 'mcg/mL'
       }
     ],
-    defaultDoseUnit: DoseUnit.MCG_KG_H,
+    // Updated unit to mcg/kg/min per instruction
+    defaultDoseUnit: DoseUnit.MCG_KG_MIN,
     isWeightBased: true,
-    doseRangeDisplay: '0,7 - 10 mcg/kg/h'
+    doseRangeDisplay: '0,02 - 0,07 mcg/kg/min'
   },
   
   // --- BLOQUEADORES CONTÍNUOS ---
